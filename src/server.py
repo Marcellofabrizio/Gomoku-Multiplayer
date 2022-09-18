@@ -1,6 +1,7 @@
 import socket
 import pickle
 from player import Player
+from payload import Payload
 from room import Room
 from _thread import *
 
@@ -17,18 +18,18 @@ def connection_handler(player, index_room):
 
     while True:
         data = player.connection.recv(4096)
-        #serialized_data = pickle.loads(data)
-        message = data.decode('utf-8')
-        if message == 'BYE':
+        serialized_data = pickle.loads(data)
+        #message = data.decode('utf-8')
+        if serialized_data.message == 'BYE':
             break
         
-        if player.index == 0:
-            client_list[1].sendall(str.encode(f'Player {player.user_name} says: {message}'))
+        if serialized_data.user_name == room.player1.user_name:
+            client_list[1].sendall(str.encode(f'Player {player.user_name} says: {serialized_data.message}'))
 
-        if player.index == 1:
-            client_list[0].sendall(str.encode(f'Player {player.user_name} says: {message}'))
+        if serialized_data.user_name == room.player2.user_name:
+            client_list[0].sendall(str.encode(f'Player {player.user_name} says: {serialized_data.message}'))
 
-        reply = f'Server: {message}'
+        reply = f'Server: {serialized_data.message}'
         print('Player: ' + str(player.user_name))
         player.connection.sendall(str.encode(reply))
 

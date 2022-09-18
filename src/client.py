@@ -1,5 +1,6 @@
 import socket
 import pickle
+from payload import Payload
 from _thread import *
 
 host = '127.0.0.1'
@@ -28,10 +29,8 @@ print(response.decode('utf-8'))
 start_new_thread(response_handler, (clientSocket,))
 while True:
     msg = input()
-    #payload = None
-    #payload.message = msg
-    #payload.user_name = user_name
-    #clientSocket.send(pickle.dumps(payload))
-    clientSocket.send(str.encode(msg))
+    payload = Payload(user_name, msg)
+    clientSocket.send(pickle.dumps(payload))
+    #clientSocket.send(str.encode(msg))
 
 clientSocket.close()
