@@ -1,43 +1,62 @@
 import socket
+import pickle
+from player import Player
+from room import Room
 from _thread import *
 
 host = '127.0.0.1'
 port = 1234
 
 client_list = []
+room_list = [Room()]*10
+index_room = 0
 
-def connection_handler(connection, player):
+def connection_handler(player, index_room):
     
+    room = room_list[index_room]
+
     while True:
-        data = connection.recv(4096)
+        data = player.connection.recv(4096)
+        #serialized_data = pickle.loads(data)
         message = data.decode('utf-8')
         if message == 'BYE':
             break
         
-        if player == 0:
-            client_list[1].sendall(str.encode('Player 0 says: ' + message))
+        if player.index == 0:
+            client_list[1].sendall(str.encode(f'Player {player.user_name} says: {message}'))
 
-        if player == 1:
-            client_list[0].sendall(str.encode('Player 1 says: ' + message))
+        if player.index == 1:
+            client_list[0].sendall(str.encode(f'Player {player.user_name} says: {message}'))
 
         reply = f'Server: {message}'
-        print('Player: ' + str(player))
-        connection.sendall(str.encode(reply))
+        print('Player: ' + str(player.user_name))
+        player.connection.sendall(str.encode(reply))
 
-    connection.close()
+    player.connection.close()
 
 def accept_connection(socket, current_player):
+    global index_room
     client, addr = socket.accept()
     print(f'Connected to: {addr[0]}:{addr[1]}')
     client_list.append(client)
     user_name = client.recv(4096).decode('utf-8')
     client.sendall(str.encode(f"Connected to server"))
     print('User connected: ' + user_name)
-    start_new_thread(connection_handler, (client, current_player))
+    player = Player(client, user_name, current_player)
+
+    if room_list[index_room].player1 == None:
+        room_list[index_room].player1 = player
+    elif room_list[index_room].player2 == None:
+        room_list[index_room].player2 = player
+
+    if room_list[index_room].is_full:
+        index_room+=1
+
+    start_new_thread(connection_handler, (player, index_room))
 
 def start_server(host, port):
     current_player = 0
-    serverSocket = socket.socket()
+    serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         serverSocket.bind((host, port))
     except socket.error as err:
