@@ -7,7 +7,6 @@ port = 1234
 client_list = []
 
 def connection_handler(connection, player):
-    connection.send(str.encode("Hello client"))
     
     while True:
         data = connection.recv(4096)
@@ -31,6 +30,9 @@ def accept_connection(socket, current_player):
     client, addr = socket.accept()
     print(f'Connected to: {addr[0]}:{addr[1]}')
     client_list.append(client)
+    user_name = client.recv(4096).decode('utf-8')
+    client.sendall(str.encode(f"Connected to server"))
+    print('User connected: ' + user_name)
     start_new_thread(connection_handler, (client, current_player))
 
 def start_server(host, port):
