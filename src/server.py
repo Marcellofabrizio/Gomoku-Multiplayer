@@ -24,10 +24,10 @@ def connection_handler(player, index_room):
             break
         
         if serialized_data.user_name == room.player1.user_name:
-            client_list[1].sendall(str.encode(f'Player {player.user_name} says: {serialized_data.message}'))
+            client_list[room.player2.index].sendall(str.encode(f'Player {player.user_name} says: {serialized_data.message}'))
 
         if serialized_data.user_name == room.player2.user_name:
-            client_list[0].sendall(str.encode(f'Player {player.user_name} says: {serialized_data.message}'))
+            client_list[room.player1.index].sendall(str.encode(f'Player {player.user_name} says: {serialized_data.message}'))
 
         reply = f'Server: {serialized_data.message}'
         print('Player: ' + str(player.user_name))
@@ -45,13 +45,14 @@ def accept_connection(socket, current_player):
     print('User connected: ' + user_name)
     player = Player(client, user_name, current_player)
 
+    if room_list[index_room].is_full:
+        index_room+=1
+        room_list[index_room] = Room()
+
     if room_list[index_room].player1 == None:
         room_list[index_room].player1 = player
     elif room_list[index_room].player2 == None:
         room_list[index_room].player2 = player
-
-    if room_list[index_room].is_full:
-        index_room+=1
 
     start_new_thread(connection_handler, (player, index_room))
 
