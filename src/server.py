@@ -19,7 +19,6 @@ def connection_handler(player, index_room):
     while True:
         data = player.connection.recv(4096)
         serialized_data = pickle.loads(data)
-        #message = data.decode('utf-8')
         if serialized_data.message == 'BYE':
             break
         
@@ -33,6 +32,7 @@ def connection_handler(player, index_room):
         print('Player: ' + str(player.user_name))
         player.connection.sendall(str.encode(reply))
 
+    player.connection.sendall(str.encode("CLOSE"))
     player.connection.close()
 
 def accept_connection(socket, current_player):

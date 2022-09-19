@@ -9,7 +9,10 @@ port = 1234
 def response_handler(connection):
     while True:
         response = connection.recv(4096)
-        print(response.decode('utf-8'))
+        if response == 'CLOSE':
+            exit(0)
+        else:
+            print(response.decode('utf-8'))
 
 user_name = input('Enter your user name: ')
 
