@@ -38,8 +38,12 @@ class Gomoku:
         lines = itertools.chain(self.row_lines(), self.col_lines()) 
 
         for start, end in lines:
-            print(start, end)
             pygame.draw.line(self.screen, Colors.WHITE, start, end, 3)
+
+    def draw_piece(self, x ,y):
+        coord = (x * self.size + self.size//2, y * self.size + self.size//2)
+        print(coord)
+        pygame.draw.circle(self.screen, Colors.BLACK, coord, 20)
 
     def draw_background(self):
         rect = pygame.Rect(0,0,self.w,self.h)
@@ -54,6 +58,13 @@ class Gomoku:
         self.draw_board()
         while True:
             for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONUP:
+                    x,y = pygame.mouse.get_pos()
+
+                    x = x // self.size
+                    y = y // self.size
+
+                    self.draw_piece(x,y)
+                    pygame.display.update()
                 if event.type == pygame.QUIT:
                     return
-
