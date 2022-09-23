@@ -11,9 +11,11 @@ class Gomoku:
     def __init__(self):
         self.rows = 16
         self.cols = 16
-        self.size = 60
+        self.size = 40
+        self.piece_size = 15
         self.w = self.size * self.cols 
         self.h = self.size * self.rows 
+        self.board_matrix = [[0 for _ in range(self.cols)]]*self.rows
 
         pygame.init()
         pygame.display.set_caption('Gomoku')
@@ -42,9 +44,14 @@ class Gomoku:
 
     def draw_piece(self, x ,y):
         coord = (x * self.size + self.size//2, y * self.size + self.size//2)
-        print(coord)
-        pygame.draw.circle(self.screen, Colors.BLACK, coord, 20)
-
+        #print(coord)
+        # x_coord e y_coord são os valores para a matriz tabuleiro
+        # o valor da posição vão depender do jogador atual
+        x_coord = (coord[0]*self.cols-1)//self.w
+        y_coord = (coord[1]*self.rows-1)//self.h
+        pygame.draw.circle(self.screen, Colors.BLACK, coord, self.piece_size)
+        pygame.display.update()
+    
     def draw_background(self):
         rect = pygame.Rect(0,0,self.w,self.h)
         pygame.draw.rect(self.screen, Colors.YELLOW, rect)
@@ -65,6 +72,5 @@ class Gomoku:
                     y = y // self.size
 
                     self.draw_piece(x,y)
-                    pygame.display.update()
                 if event.type == pygame.QUIT:
                     return
