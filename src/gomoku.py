@@ -1,5 +1,6 @@
 import pygame
 import itertools
+import pickle
 
 class Colors:
     BLACK = (0, 0, 0)
@@ -16,6 +17,7 @@ class Gomoku:
         self.w = self.size * self.cols 
         self.h = self.size * self.rows 
         self.board_matrix = [[0 for _ in range(self.cols)]]*self.rows
+        self.turn = 1
 
         pygame.init()
         pygame.display.set_caption('Gomoku')
@@ -45,13 +47,13 @@ class Gomoku:
     def draw_piece(self, x ,y):
         coord = (x * self.size + self.size//2, y * self.size + self.size//2)
         #print(coord)
-        # x_coord e y_coord são os valores para a matriz tabuleiro
-        # o valor da posição vão depender do jogador atual
         x_coord = (coord[0]*self.cols-1)//self.w
         y_coord = (coord[1]*self.rows-1)//self.h
-        pygame.draw.circle(self.screen, Colors.BLACK, coord, self.piece_size)
+        color = Colors.BLACK if self.turn%2 == 0 else Colors.WHITE
+        pygame.draw.circle(self.screen, color, coord, self.piece_size)
         pygame.display.update()
-    
+        self.turn += 1
+
     def draw_background(self):
         rect = pygame.Rect(0,0,self.w,self.h)
         pygame.draw.rect(self.screen, Colors.YELLOW, rect)
@@ -60,6 +62,9 @@ class Gomoku:
         self.draw_background()
         self.draw_lines()
         pygame.display.update()
+    
+    def serialize_board(self):
+        return pickle.dumps(self.board)
 
     def play(self):
         self.draw_board()
