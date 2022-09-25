@@ -9,7 +9,10 @@ class Colors:
 
 class Gomoku:
 
-    def __init__(self):
+    def __init__(self, connection=None):
+
+        self.conn_i = connection
+
         self.rows = 16
         self.cols = 16
         self.size = 40
@@ -50,8 +53,11 @@ class Gomoku:
         x_coord = (coord[0]*self.cols-1)//self.w
         y_coord = (coord[1]*self.rows-1)//self.h
         color = Colors.BLACK if self.turn%2 == 0 else Colors.WHITE
+        self.board_matrix[x_coord][y_coord] = (self.turn%2)+1
         pygame.draw.circle(self.screen, color, coord, self.piece_size)
         pygame.display.update()
+        
+        self.conn_i.send((x_coord, y_coord), self.turn)
         self.turn += 1
 
     def draw_background(self):
@@ -79,3 +85,5 @@ class Gomoku:
                     self.draw_piece(x,y)
                 if event.type == pygame.QUIT:
                     return
+        if self.connection != None:
+            self.connection.close()

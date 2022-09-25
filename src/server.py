@@ -19,18 +19,17 @@ def connection_handler(player, index_room):
     while True:
         data = player.connection.recv(4096)
         serialized_data = pickle.loads(data)
+        print(len(data))
         if serialized_data.message == 'BYE':
             break
         
         if serialized_data.user_name == room.player1.user_name:
-            client_list[room.player2.index].sendall(str.encode(f'Player {player.user_name} says: {serialized_data.message}'))
+            client_list[room.player2.index].sendall(data)
 
         if serialized_data.user_name == room.player2.user_name:
-            client_list[room.player1.index].sendall(str.encode(f'Player {player.user_name} says: {serialized_data.message}'))
+            client_list[room.player1.index].sendall(data)
 
-        reply = f'Server: {serialized_data.message}'
         print('Player: ' + str(player.user_name))
-        player.connection.sendall(str.encode(reply))
 
     player.connection.sendall(str.encode("CLOSE"))
     player.connection.close()
