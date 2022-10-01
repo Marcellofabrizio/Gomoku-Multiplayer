@@ -14,6 +14,7 @@ class Connection:
     def __init__(self):
         self.host = host
         self.port = port
+        self.received_move = None
         self.connection = self.create_socket()
         self.player_name = 'Player ' + str(randint(0, 100))
         self.start_connection()
@@ -33,7 +34,7 @@ class Connection:
         self.connection.sendall(str.encode(self.player_name))
         response = self.connection.recv(4096)
         print(response.decode('utf-8'))
-        start_new_thread(self.response_handler, ())
+        #start_new_thread(self.response_handler, ())
     
     def response_handler(self):
         
@@ -41,6 +42,8 @@ class Connection:
             response = self.connection.recv(4096)
             data = pickle.loads(response)
             print(data.message)
+            self.received_move = data.message
+
 
     def send(self, board_matrix, turn):
         payload = Payload(self.player_name, board_matrix, turn)

@@ -1,6 +1,13 @@
 import pygame
 import itertools
 import pickle
+import numpy as np
+
+from _thread import *
+from queue import Queue
+import threading
+
+tasks = Queue()
 
 class Colors:
     BLACK = (0, 0, 0)
@@ -19,7 +26,7 @@ class Gomoku:
         self.piece_size = 15
         self.w = self.size * self.cols 
         self.h = self.size * self.rows 
-        self.board_matrix = [[0 for _ in range(self.cols)]]*self.rows
+        self.free_slots = np.zeros((self.rows,self.cols))
         self.turn = 1
 
         pygame.init()
@@ -28,6 +35,9 @@ class Gomoku:
         self.screen = pygame.display.set_mode((self.w, self.h))
         self.screen.fill(Colors.WHITE)
         self.player_colors = {'w': Colors.WHITE, 'b': Colors.BLACK}
+
+        response_thread = threading.Thread(target=self.response_handler)
+        response_thread.start()
 
     def row_lines(self):
         half_size = self.size//2
@@ -47,17 +57,25 @@ class Gomoku:
         for start, end in lines:
             pygame.draw.line(self.screen, Colors.WHITE, start, end, 3)
 
-    def draw_piece(self, x ,y):
+    def draw_piece(self, x ,y, send_move = True):
         coord = (x * self.size + self.size//2, y * self.size + self.size//2)
-        #print(coord)
         x_coord = (coord[0]*self.cols-1)//self.w
         y_coord = (coord[1]*self.rows-1)//self.h
+
+        for i in range(len(self.free_slots)):
+            print(self.free_slots[i])
+        print()
+
+        if self.free_slots[x_coord, y_coord] != 0:
+            return
+
         color = Colors.BLACK if self.turn%2 == 0 else Colors.WHITE
-        self.board_matrix[x_coord][y_coord] = (self.turn%2)+1
+        self.free_slots[x_coord, y_coord] = (self.turn%2)+1
         pygame.draw.circle(self.screen, color, coord, self.piece_size)
         pygame.display.update()
         
-        self.conn_i.send((x_coord, y_coord), self.turn)
+        if send_move:
+            self.conn_i.send((x_coord, y_coord), self.turn)
         self.turn += 1
 
     def draw_background(self):
@@ -75,6 +93,11 @@ class Gomoku:
     def play(self):
         self.draw_board()
         while True:
+
+            if not tasks.empty():
+                x,y = tasks.get()
+                self.draw_piece(x,y,False)
+
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONUP:
                     x,y = pygame.mouse.get_pos()
@@ -85,5 +108,13 @@ class Gomoku:
                     self.draw_piece(x,y)
                 if event.type == pygame.QUIT:
                     return
-        if self.connection != None:
-            self.connection.close()
+        if self.conn_i != None:
+            self.conn_i.connection.close()
+
+
+    def response_handler(self):
+        
+        while True:
+            response = self.conn_i.connection.recv(4096)
+            data = pickle.loads(response)
+            tasks.put(data.message)
