@@ -7,7 +7,7 @@ from random import randint
 from _thread import *
 
 host = '127.0.0.1'
-port = 1235
+port = 1234
 
 class Connection:
 
@@ -33,7 +33,7 @@ class Connection:
 
         self.connection.sendall(str.encode(self.player_name))
         response = self.connection.recv(4096)
-        self.player_turn = int(response.decode('utf-8'))
+        print(response.decode('utf-8'))
         #start_new_thread(self.response_handler, ())
     
     def response_handler(self):
