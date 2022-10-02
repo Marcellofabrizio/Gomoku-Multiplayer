@@ -57,7 +57,6 @@ class Gomoku:
     def __init__(self, connection=None):
 
         self.conn_i = connection
-
         self.rows = 16
         self.cols = 16
         self.size = 40
@@ -66,6 +65,7 @@ class Gomoku:
         self.h = self.size * self.rows 
         self.free_slots = np.zeros((self.rows,self.cols))
         self.turn = 1
+        self.player_turn = self.conn_i.player_turn
 
         pygame.init()
         pygame.display.set_caption('Gomoku')
@@ -96,18 +96,20 @@ class Gomoku:
             pygame.draw.line(self.screen, Colors.WHITE, start, end, 3)
 
     def draw_piece(self, x ,y, send_move = True):
+
+        print(self.turn)
+        if self.player_turn%2 != self.turn%2:
+            return
+
         coord = (x * self.size + self.size//2, y * self.size + self.size//2)
         x_coord = (coord[0]*self.cols-1)//self.w
         y_coord = (coord[1]*self.rows-1)//self.h
 
-        '''for i in range(len(self.free_slots)):
-            print(self.free_slots[i])
-        print()'''
-
         if self.free_slots[x_coord, y_coord] != 0:
             return
 
-        color = Colors.BLACK if self.turn%2 == 0 else Colors.WHITE
+        print(self.turn-1)
+        color = Colors.BLACK if self.turn%2 == 1 else Colors.WHITE
         self.free_slots[x_coord, y_coord] = (self.turn%2)+1
         pygame.draw.circle(self.screen, color, coord, self.piece_size)
         pygame.display.update()
@@ -115,12 +117,10 @@ class Gomoku:
         if self.win_play2(x_coord, y_coord):
             print("WON 2.0")
 
-        #if self.win_play(x_coord, y_coord):
-            #print("won")
-        
         if send_move:
+            self.turn += 1
+            print("Aumenta turno: ", self.turn)
             self.conn_i.send((x_coord, y_coord), self.turn)
-        self.turn += 1
 
     def draw_background(self):
         rect = pygame.Rect(0,0,self.w,self.h)
@@ -241,6 +241,8 @@ class Gomoku:
 
             if not tasks.empty():
                 x,y = tasks.get()
+                self.turn = tasks.get()
+                print("Recebe turno: ", self.turn)
                 self.draw_piece(x,y,False)
 
             for event in pygame.event.get():
@@ -263,3 +265,4 @@ class Gomoku:
             response = self.conn_i.connection.recv(4096)
             data = pickle.loads(response)
             tasks.put(data.message)
+            tasks.put(data.turn)

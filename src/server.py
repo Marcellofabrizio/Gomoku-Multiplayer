@@ -6,7 +6,7 @@ from room import Room
 from _thread import *
 
 host = '127.0.0.1'
-port = 1234
+port = 1235
 
 client_list = []
 room_list = [Room()]*10
@@ -40,7 +40,6 @@ def accept_connection(socket, current_player):
     print(f'Connected to: {addr[0]}:{addr[1]}')
     client_list.append(client)
     user_name = client.recv(4096).decode('utf-8')
-    client.sendall(str.encode(f"Connected to server"))
     print('User connected: ' + user_name)
     player = Player(client, user_name, current_player)
 
@@ -48,11 +47,18 @@ def accept_connection(socket, current_player):
         index_room+=1
         room_list[index_room] = Room()
 
+    turn = 0
     if room_list[index_room].player1 == None:
         room_list[index_room].player1 = player
+        turn = 1
+        room_list[index_room].player1.turn = turn
+
     elif room_list[index_room].player2 == None:
         room_list[index_room].player2 = player
+        turn = 2
+        room_list[index_room].player2.turn = turn
 
+    client.sendall(str.encode(str(turn)))
     start_new_thread(connection_handler, (player, index_room))
 
 def start_server(host, port):
