@@ -45,7 +45,7 @@ class Connection:
             self.received_move = data.message
 
 
-    def send(self, board_matrix, turn):
-        payload = Payload(self.player_name, board_matrix, turn)
+    def send(self, msg, turn):
+        payload = Payload(self.player_name, msg, turn)
         self.connection.send(pickle.dumps(payload))
 
