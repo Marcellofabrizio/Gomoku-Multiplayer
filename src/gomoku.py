@@ -9,43 +9,6 @@ from queue import Queue
 import threading
 
 tasks = Queue()
-plays = [
-    [(0,-4), (0,-3), (0,-2), (0,-1), (0,0)],
-    [(0,-3), (0,-2), (0,-1), (0,0), (0,1)],
-    [(0,-2), (0,-1), (0,0), (0,1), (0,2)],
-    [(0,-1), (0,0), (0,1), (0,2), (0,3)],
-    [(0,0), (0,1), (0,2), (0,3), (0,4)],
-
-    [(0,0), (-1,0), (-2,0), (-3,0), (-4,0)],
-    [(1,0), (0,0), (-1,0), (-2,0), (-3,0)],
-    [(2,0), (1,0), (0,0), (-1,0), (-2,0)],
-    [(3,0), (2,0), (1,0), (0,0), (-1,0)],
-    [(4,0), (3,0), (2,0), (1,0), (0,0)],
-
-    [(-4,-4), (-3,-3), (-2,-2), (-1,-1), (0,0)],
-    [(-3,-3), (-2,-2), (-1,-1), (0,0), (1,1)],
-    [(-2,-2), (-1,-1), (0,0), (1,1), (2,2)],
-    [(-1,-1), (0,0), (1,1), (2,2), (3,3)],
-    [(0,0), (1,1), (2,2), (3,3), (4,4)],
-
-    [(4,4), (3,3), (2,2), (1,1), (0,0)],
-    [(3,3), (2,2), (1,1), (0,0), (-1,-1)],
-    [(2,2), (1,1), (0,0), (-1,-1), (-2,-2)],
-    [(1,1), (0,0), (-1,-1), (-2,-2), (-3,-3)],
-    [(0,0), (-1,-1), (-2,-2), (-3,-3), (-4,-4)],
-
-    [(0,0), (1,1), (2,2), (3,3), (4,4)],
-    [(-1,-1), (0,0), (1,1), (2,2), (3,3)],
-    [(-2,-2), (-1,-1), (0,0), (1,1), (2,2)],
-    [(-3,-3), (-2,-2), (-1,-1), (0,0), (3,3)],
-    [(-4,-4), (-3,-3), (-2,-2), (-1,-1), (0,0)],
-
-    [(0,0), (-1,-1), (-2,-2), (-3,-3), (-4,-4)],
-    [(1,1), (0,0), (-1,-1), (-2,-2), (-3,-3)],
-    [(2,2), (1,1), (0,0), (-1,-1), (-2,-2)],
-    [(3,3), (2,2), (1,1), (0,0), (-1,-1)],
-    [(4,4), (3,3), (2,2), (1,1), (0,0)]
-]
 
 class Colors:
     BLACK = (0, 0, 0)
@@ -100,23 +63,16 @@ class Gomoku:
         x_coord = (coord[0]*self.cols-1)//self.w
         y_coord = (coord[1]*self.rows-1)//self.h
 
-        '''for i in range(len(self.free_slots)):
-            print(self.free_slots[i])
-        print()'''
-
         if self.free_slots[x_coord, y_coord] != 0:
             return
 
-        color = Colors.BLACK if self.turn%2 == 0 else Colors.WHITE
+        color = Colors.WHITE if self.turn%2 == 0 else Colors.BLACK
         self.free_slots[x_coord, y_coord] = (self.turn%2)+1
         pygame.draw.circle(self.screen, color, coord, self.piece_size)
         pygame.display.update()
 
-        if self.win_play2(x_coord, y_coord):
-            print("WON 2.0")
-
-        #if self.win_play(x_coord, y_coord):
-            #print("won")
+        if self.win_play(x_coord, y_coord):
+            print("WON")
         
         if send_move:
             self.conn_i.send((x_coord, y_coord), self.turn)
@@ -135,22 +91,6 @@ class Gomoku:
         return pickle.dumps(self.board)
 
     def win_play(self,x,y):
-        turno = (self.turn%2)+1
-        for direction in plays:
-            try:
-                count = 0
-                for coord in direction:
-                    x_coord,y_coord = coord
-                    if self.free_slots[x+x_coord, y+y_coord] == turno:
-                        count += 1
-
-                if count == 5:
-                    return True
-            except IndexError:
-                continue
-        return False
-
-    def win_play2(self,x,y):
         turno = (self.turn%2)+1
 
         if self.diagonal_principal(x,y,turno):
@@ -195,10 +135,14 @@ class Gomoku:
         new_y = 0
         vetor = []
 
+        print("x", x)
+        print("y", y)
+
         if x > y:
             new_y = x + y
-        elif x < y:
-            new_x = x + y
+
+        print("new x:", new_x)
+        print("new y:", new_y)
 
         while(new_x >= 0 and new_y < 16):
             vetor.append(int(self.free_slots[new_x, new_y]))
@@ -237,20 +181,24 @@ class Gomoku:
 
     def play(self):
         self.draw_board()
+        can_play = True
         while True:
 
             if not tasks.empty():
+                can_play = True
                 x,y = tasks.get()
                 self.draw_piece(x,y,False)
 
             for event in pygame.event.get():
-                if event.type == pygame.MOUSEBUTTONUP:
-                    x,y = pygame.mouse.get_pos()
+                if (can_play):
+                    if event.type == pygame.MOUSEBUTTONUP:
+                        x,y = pygame.mouse.get_pos()
 
-                    x = x // self.size
-                    y = y // self.size
+                        x = x // self.size
+                        y = y // self.size
 
-                    self.draw_piece(x,y)
+                        self.draw_piece(x,y)
+                        can_play = False
                 if event.type == pygame.QUIT:
                     return
         if self.conn_i != None:
