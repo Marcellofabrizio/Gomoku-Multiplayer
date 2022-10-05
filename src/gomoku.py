@@ -144,18 +144,13 @@ class Gomoku:
         return retorno != None
 
     def diagonal_secundaria(self, x, y, turno):
-        new_x = 0
         new_y = 0
+        new_x = x + y
         vetor = []
 
-        print("x", x)
-        print("y", y)
-
-        if x > y:
-            new_y = x + y
-
-        print("new x:", new_x)
-        print("new y:", new_y)
+        if new_x > 15:
+            new_y = new_x - 15
+            new_x = 15
 
         while (new_x >= 0 and new_y < 16):
             vetor.append(int(self.free_slots[new_x, new_y]))
