@@ -1,12 +1,13 @@
 import pygame
 import itertools
 import pickle
-import numpy as np
 import re
+import time
+import numpy as np
+import threading
 
 from _thread import *
 from queue import Queue
-import threading
 
 tasks = Queue()
 
@@ -31,6 +32,7 @@ class Gomoku:
         self.h = self.size * self.rows
         self.free_slots = np.zeros((self.rows, self.cols))
         self.turn = 1
+        self.game_over = False
 
         pygame.init()
         pygame.display.set_caption('Gomoku')
@@ -38,7 +40,9 @@ class Gomoku:
         self.screen = pygame.display.set_mode((self.w, self.h))
         self.screen.fill(Colors.WHITE)
         self.player_colors = {'w': Colors.WHITE, 'b': Colors.BLACK}
+        self.start_response_thread()
 
+    def start_response_thread(self):
         response_thread = threading.Thread(target=self.response_handler)
         response_thread.start()
 
@@ -75,6 +79,7 @@ class Gomoku:
 
         if self.win_play(x_coord, y_coord):
             self.draw_outcome()
+            self.game_over = True
             print("WON")
 
         if send_move:
@@ -190,33 +195,46 @@ class Gomoku:
     def play(self):
         self.draw_board()
         can_play = True
-        while True:
 
+        while not self.game_over:
+            
             if not tasks.empty():
-
                 can_play = True
                 msg = tasks.get()
                 x, y = msg
                 self.draw_piece(x, y, False)
 
             for event in pygame.event.get():
-                if (can_play):
-                    if event.type == pygame.MOUSEBUTTONUP:
-                        x, y = pygame.mouse.get_pos()
+                self.event_handler(can_play, event)
 
-                        x = x // self.size
-                        y = y // self.size
+        self.quit_game()
 
-                        self.draw_piece(x, y)
-                        can_play = False
-                if event.type == pygame.QUIT:
-                    return
+    def quit_game(self):
+        time.sleep(5)
+        
         if self.conn_i != None:
             self.conn_i.connection.close()
+        pygame.quit()
+        exit()
 
     def response_handler(self):
-
         while True:
             response = self.conn_i.connection.recv(4096)
             data = pickle.loads(response)
             tasks.put(data.message)
+
+    def event_handler(self, can_play, event):
+        
+        if (can_play):
+        
+            if event.type == pygame.MOUSEBUTTONUP:
+                x, y = pygame.mouse.get_pos()
+
+                x = x // self.size
+                y = y // self.size
+
+                self.draw_piece(x, y)
+                can_play = False
+        
+        if event.type == pygame.QUIT:
+            pygame.quit()
