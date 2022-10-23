@@ -1,4 +1,6 @@
 import socket
+import numpy as np
+import xmlrpc.server
 import pickle
 from player import Player
 from payload import Payload
@@ -7,6 +9,8 @@ from _thread import *
 
 host = '127.0.0.1'
 port = 1234
+current_player = 0
+matrix = np.zeros((15,15))
 
 client_list = []
 room_list = [Room()]*10
@@ -34,6 +38,7 @@ def connection_handler(player, index_room):
     player.connection.sendall(str.encode("CLOSE"))
     player.connection.close()
 
+'''socket
 def accept_connection(socket, current_player):
     global index_room
     client, addr = socket.accept()
@@ -53,21 +58,38 @@ def accept_connection(socket, current_player):
     elif room_list[index_room].player2 == None:
         room_list[index_room].player2 = player
 
-    start_new_thread(connection_handler, (player, index_room))
+    start_new_thread(connection_handler, (player, index_room))'''
+
+
+def define_player_number():
+    current_player = current_player + 1
+    return current_player
+
+def update_matrix(player, coord):
+    matrix[coord.x,coord.y] = player
+
+    if player == 1:
+        current_player = 2
+    else:
+        current_player = 1
+
+    return 2
+
+def get_matrix(player):
+    if player == current_player:
+        return 2
+    else:
+        return None
 
 def start_server(host, port):
-    current_player = 0
-    serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        serverSocket.bind((host, port))
-    except socket.error as err:
-        print(str(err))
+    server = xmlrpc.server.SimpleXMLRPCServer(("localhost", port ))
+
+    server.register_function(define_player_number, "define_player_number")
+    server.register_function(update_matrix, "update_matrix")
+    server.register_function(get_matrix, "get_matrix")
 
     print('Server listening at port ' + str(port))
-    serverSocket.listen(2)
 
-    while True:
-        accept_connection(serverSocket, current_player)
-        current_player += 1
+    server.serve_forever()
 
 start_server(host, port)
