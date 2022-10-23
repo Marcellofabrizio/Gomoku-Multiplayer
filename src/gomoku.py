@@ -23,7 +23,7 @@ class Gomoku:
 
     def __init__(self):
         
-        self.server = xmlrpc.client.ServerProxy('http://localhost:1234')
+        self.server = xmlrpc.client.ServerProxy('http://localhost:1234', allow_none=True)
         self.turn = self.server.define_player_number()
 
         self.rows = 16
@@ -73,8 +73,13 @@ class Gomoku:
         if self.free_slots[x_coord, y_coord] != 0:
             return
 
-        color = Colors.WHITE if self.turn % 2 == 0 else Colors.BLACK
-        self.free_slots[x_coord, y_coord] = (self.turn % 2)+1
+        if self.turn == 1:
+            color = Colors.BLACK
+        else:
+            color = Colors.WHITE
+
+        self.free_slots[x_coord, y_coord] = self.turn
+        
         pygame.draw.circle(self.screen, color, coord, self.piece_size)
         pygame.display.update()
 
@@ -85,12 +90,13 @@ class Gomoku:
 
         if send_move:
             self.server.update_matrix(self.turn, (x_coord, y_coord))
-            ''' socket
-            self.conn_i.send((x_coord, y_coord), self.turn)'''
-        self.turn += 1
 
     def draw_outcome(self):
-        msg = "Whites win!" if self.turn % 2 == 0 else "Blacks win!"
+        if self.turn == 1:
+            msg = "Blacks win!" 
+        else:
+            msg = "Whites win!"
+
         font_size = self.w // 10
         font = pygame.font.Font("freesansbold.ttf", font_size)
         label = font.render(msg, True, Colors.WHITE, Colors.BLACK)
@@ -112,7 +118,7 @@ class Gomoku:
         return pickle.dumps(self.board)
 
     def win_play(self, x, y):
-        turno = (self.turn % 2)+1
+        turno = self.turn
 
         if self.diagonal_principal(x, y, turno):
             print("funcionou principal")
@@ -209,11 +215,13 @@ class Gomoku:
                 self.draw_piece(x, y, False)'''
             
             response = self.server.get_matrix(self.turn)
+            
             if response == None:
                 continue
-            else:
-                self.free_slots = response
-                can_play = True
+            
+            print(response)
+            self.free_slots = np.array(response)
+            can_play = True
 
             for event in pygame.event.get():
                 self.event_handler(can_play, event)
