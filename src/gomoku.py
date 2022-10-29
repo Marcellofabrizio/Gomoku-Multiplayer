@@ -24,7 +24,8 @@ class Gomoku:
     def __init__(self):
         
         self.server = xmlrpc.client.ServerProxy('http://localhost:1234', allow_none=True)
-        self.turn = self.server.define_player_number()
+        self.player_number = self.server.define_player_number()
+        print(f"Receive player number {self.player_number}")
 
         self.rows = 16
         self.cols = 16
@@ -42,10 +43,11 @@ class Gomoku:
         self.screen.fill(Colors.WHITE)
         self.player_colors = {'w': Colors.WHITE, 'b': Colors.BLACK}
 
-    '''socket 
+        self.start_response_thread()
+
     def start_response_thread(self):
         response_thread = threading.Thread(target=self.response_handler)
-        response_thread.start()'''
+        response_thread.start()
 
     def row_lines(self):
         half_size = self.size//2
@@ -65,7 +67,7 @@ class Gomoku:
         for start, end in lines:
             pygame.draw.line(self.screen, Colors.WHITE, start, end, 3)
 
-    def draw_piece(self, x, y, send_move=True):
+    def draw_piece(self, player, x, y, send_move=True):
         coord = (x * self.size + self.size//2, y * self.size + self.size//2)
         x_coord = (coord[0]*self.cols-1)//self.w
         y_coord = (coord[1]*self.rows-1)//self.h
@@ -73,26 +75,26 @@ class Gomoku:
         if self.free_slots[x_coord, y_coord] != 0:
             return
 
-        if self.turn == 1:
+        if player == 1:
             color = Colors.BLACK
         else:
             color = Colors.WHITE
 
-        self.free_slots[x_coord, y_coord] = self.turn
+        self.free_slots[x_coord, y_coord] = player
         
         pygame.draw.circle(self.screen, color, coord, self.piece_size)
         pygame.display.update()
 
-        if self.win_play(x_coord, y_coord):
-            self.draw_outcome()
+        if self.win_play(player, x_coord, y_coord):
+            self.draw_outcome(player)
             self.game_over = True
             print("WON")
 
         if send_move:
-            self.server.update_matrix(self.turn, (x_coord, y_coord))
+            self.server.update_matrix(player, (x_coord, y_coord))
 
-    def draw_outcome(self):
-        if self.turn == 1:
+    def draw_outcome(self, player):
+        if player == 1:
             msg = "Blacks win!" 
         else:
             msg = "Whites win!"
@@ -117,23 +119,18 @@ class Gomoku:
     def serialize_board(self):
         return pickle.dumps(self.board)
 
-    def win_play(self, x, y):
-        turno = self.turn
+    def win_play(self, player, x, y):
 
-        if self.diagonal_principal(x, y, turno):
-            print("funcionou principal")
+        if self.diagonal_principal(x, y, player):
             return True
 
-        if self.diagonal_secundaria(x, y, turno):
-            print("funcionou secundaria")
+        if self.diagonal_secundaria(x, y, player):
             return True
 
-        if self.vertical(turno):
-            print("funcionou vertical")
+        if self.vertical(player):
             return True
 
-        if self.horizontal(turno):
-            print("funcionou horizontal")
+        if self.horizontal(player):
             return True
 
     def diagonal_principal(self, x, y, turno):
@@ -203,28 +200,19 @@ class Gomoku:
 
     def play(self):
         self.draw_board()
-        can_play = False
-
+        self.can_play = True if self.player_number == 1 else False
         while not self.game_over:
             
-            '''socket
             if not tasks.empty():
-                can_play = True
                 msg = tasks.get()
-                x, y = msg
-                self.draw_piece(x, y, False)'''
+                player, coord = msg
+                if player and player != self.player_number:
+                    self.can_play = True
+                    x, y = coord
+                    self.draw_piece(player, x, y, False)
             
-            response = self.server.get_matrix(self.turn)
-            
-            if response == None:
-                continue
-            
-            print(response)
-            self.free_slots = np.array(response)
-            can_play = True
-
             for event in pygame.event.get():
-                self.event_handler(can_play, event)
+                self.event_handler(event)
 
         self.quit_game()
 
@@ -234,25 +222,23 @@ class Gomoku:
         pygame.quit()
         exit()
 
-    '''socket
-    def response_handler(self):
-        while True:
-            response = self.conn_i.connection.recv(4096)
-            data = pickle.loads(response)
-            tasks.put(data.message)'''
-
-    def event_handler(self, can_play, event):
+    def event_handler(self, event):
         
-        if (can_play):
-        
+        if self.can_play:
             if event.type == pygame.MOUSEBUTTONUP:
                 x, y = pygame.mouse.get_pos()
 
                 x = x // self.size
                 y = y // self.size
 
-                self.draw_piece(x, y)
-                can_play = False
+                self.draw_piece(self.player_number,x, y)
+                self.can_play = False
         
         if event.type == pygame.QUIT:
             pygame.quit()
+
+    def response_handler(self):
+        while True:
+            time.sleep(0.25)
+            response = self.server.get_matrix(self.player_number)
+            tasks.put(response)

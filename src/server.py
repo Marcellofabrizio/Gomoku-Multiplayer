@@ -14,16 +14,18 @@ class Server:
         self.port = port
         self.current_player = 0
         self.game_board = np.zeros((16,16))
+        self.last_player = None
+        self.last_play = None
 
     def define_player_number(self):
         self.current_player = self.current_player + 1
         return self.current_player
 
     def update_matrix(self, player, coord):
-        print(player, coord)
         x, y = coord
         self.game_board[x,y] = player
-
+        self.last_player = player
+        self.last_play = coord
         if player == 1:
             self.current_player = 2
         else:
@@ -32,11 +34,7 @@ class Server:
         return self.game_board.tolist()
 
     def get_matrix(self, player):
-        print(player)
-        if player == self.current_player:
-            return self.game_board.tolist()
-        else:
-            return None
+        return (self.last_player, self.last_play)
 
     def start_server(self):
         self.server = xmlrpc.server.SimpleXMLRPCServer((self.host, self.port ), allow_none=True, logRequests=False)
